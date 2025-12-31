@@ -74,6 +74,8 @@ public:
 	static void ListFilterFunction(DataChunk &args, ExpressionState &state, Vector &result);
 	//! Internally executes list_reduce
 	static void ListReduceFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	//! Internally executes list_any
+	static void ListAnyFunction(DataChunk &args, ExpressionState &state, Vector &result);
 
 public:
 	//! Lambda expressions can only be executed on one STANDARD_VECTOR_SIZE list child elements at a time, so for

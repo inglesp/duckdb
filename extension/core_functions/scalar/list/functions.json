@@ -212,5 +212,14 @@
         "categories": ["list"],
         "type": "scalar_function",
         "aliases": ["array_has_all", "@>", "<@"]
+    },
+    {
+        "name": "list_any",
+        "parameters": "list,lambda(x)",
+        "description": "Returns `true` if the `lambda` function returns `true` for any element of the input `list`. DuckDB must be able to cast the `lambda` function's return type to `BOOL`.",
+        "example": "list_any([3, 4, 5], lambda x : x > 4)",
+        "categories": ["list", "lambda"],
+        "type": "scalar_function",
+        "aliases": ["array_any"]
     }
 ]

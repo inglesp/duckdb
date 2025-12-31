@@ -11,7 +11,8 @@ add_library_unity(
   list_distance.cpp
   array_slice.cpp
   list_sort.cpp
-  list_reduce.cpp)
+  list_reduce.cpp
+  list_any.cpp)
 set(CORE_FUNCTION_FILES
     ${CORE_FUNCTION_FILES} $<TARGET_OBJECTS:duckdb_core_functions_list>
     PARENT_SCOPE)

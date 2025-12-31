@@ -409,4 +409,20 @@ struct ListHasAllFunAlias2 {
 	static constexpr const char *Name = "<@";
 };
 
+struct ListAnyFun {
+	static constexpr const char *Name = "list_any";
+	static constexpr const char *Parameters = "list,lambda(x)";
+	static constexpr const char *Description = "Returns `true` if the `lambda` function returns `true` for any element of the input `list`. DuckDB must be able to cast the `lambda` function's return type to `BOOL`.";
+	static constexpr const char *Example = "list_any([3, 4, 5], lambda x : x > 4)";
+	static constexpr const char *Categories = "list,lambda";
+
+	static ScalarFunction GetFunction();
+};
+
+struct ArrayAnyFun {
+	using ALIAS = ListAnyFun;
+
+	static constexpr const char *Name = "array_any";
+};
+
 } // namespace duckdb

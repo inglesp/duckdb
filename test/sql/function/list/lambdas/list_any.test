@@ -1,0 +1,70 @@
+# name: test/sql/function/list/lambdas/list_any.test
+# description: Test list_any function
+# group: [lambdas]
+
+statement ok
+SET lambda_syntax='DISABLE_SINGLE_ARROW'
+
+# basic true/false cases
+
+query I
+SELECT list_any([1, 2, 3], lambda x: x % 2 = 0)
+----
+true
+
+query I
+SELECT list_any([1, 3, 5], lambda x: x % 2 = 0)
+----
+false
+
+# null list propagates
+
+query I
+SELECT list_any(NULL, lambda x: x > 1)
+----
+NULL
+
+# empty list always returns false
+
+query I
+SELECT list_any([], lambda x: true)
+----
+false
+
+# lists containing NULL elements
+
+query I
+SELECT list_any([NULL, NULL, 7], lambda x: x > 5)
+----
+true
+
+query I
+SELECT list_any([NULL, NULL], lambda x: x IS NOT NULL)
+----
+false
+
+# optional index parameter stays 1-based
+
+query I
+SELECT list_any([10, 20, 30], lambda val, idx: idx = 3 AND val = 30)
+----
+true
+
+# lambda return values can be auto-cast to bool
+
+query I
+SELECT list_any([2, 4], lambda x: x - 2)
+----
+true
+
+query I
+SELECT list_any([2], lambda x: x - 2)
+----
+false
+
+# array alias mirrors list_any
+
+query I
+SELECT array_any([1, 2, 3], lambda x: x = 2)
+----
+true
