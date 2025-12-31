@@ -118,6 +118,15 @@
         "aliases": ["array_filter", "filter"]
     },
     {
+        "name": "list_any",
+        "parameters": "list,lambda(x)",
+        "description": "Returns `true` if the `lambda` function returns `true` for any element of the input `list`. DuckDB must be able to cast the `lambda` function's return type to `BOOL`.",
+        "example": "list_any([3, 4, 5], lambda x : x > 4)",
+        "categories": ["list", "lambda"],
+        "type": "scalar_function",
+        "aliases": ["array_any"]
+    },
+    {
         "name": "list_reduce",
         "parameters": "list,lambda(x, y),initial_value",
         "description": "Reduces all elements of the input `list` into a single scalar value by executing the `lambda` function on a running result and the next list element. The `lambda` function has an optional `initial_value` argument.",

@@ -396,4 +396,112 @@ void LambdaFunctions::ListFilterFunction(DataChunk &args, ExpressionState &state
 	ExecuteLambda<ListFilterFunctor>(args, state, result);
 }
 
+void LambdaFunctions::ListAnyFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+	bool result_is_null = false;
+	LambdaInfo info(args, state, result, result_is_null);
+	if (result_is_null) {
+		return;
+	}
+
+	auto result_data = FlatVector::GetData<bool>(result);
+	for (idx_t row_idx = 0; row_idx < info.row_count; row_idx++) {
+		result_data[row_idx] = false;
+	}
+	auto &result_validity = *info.result_validity;
+
+	auto mutable_column_infos = LambdaFunctions::GetMutableColumnInfo(info.column_infos);
+
+	// special-handling for the child_vector
+	auto child_vector_size = ListVector::GetListSize(args.data[0]);
+	LambdaFunctions::ColumnInfo child_info(*info.child_vector);
+	info.child_vector->ToUnifiedFormat(child_vector_size, child_info.format);
+
+	// get the expression executor
+	LambdaExecuteInfo execute_info(state.GetContext(), *info.lambda_expr, args, info.has_index, *info.child_vector);
+
+	// additional index vector
+	Vector index_vector(LogicalType::BIGINT);
+	vector<idx_t> row_indexes(STANDARD_VECTOR_SIZE);
+	vector<bool> row_done(info.row_count, false);
+
+	auto FlushChunk = [&](idx_t &elem_cnt) {
+		if (elem_cnt == 0) {
+			return;
+		}
+		execute_info.lambda_chunk.Reset();
+		ExecuteExpression(elem_cnt, child_info, info.column_infos, index_vector, execute_info);
+		auto &lambda_vector = execute_info.lambda_chunk.data[0];
+		UnifiedVectorFormat lambda_data;
+		lambda_vector.ToUnifiedFormat(elem_cnt, lambda_data);
+		auto lambda_values = UnifiedVectorFormat::GetData<bool>(lambda_data);
+		for (idx_t i = 0; i < elem_cnt; i++) {
+			auto entry_idx = lambda_data.sel->get_index(i);
+			if (!lambda_data.validity.RowIsValid(entry_idx) || !lambda_values[entry_idx]) {
+				continue;
+			}
+			auto row_idx = row_indexes[i];
+			if (!row_done[row_idx]) {
+				result_data[row_idx] = true;
+				row_done[row_idx] = true;
+			}
+		}
+		elem_cnt = 0;
+	};
+
+	// loop over the child entries and create chunks to be executed by the expression executor
+	idx_t elem_cnt = 0;
+	for (idx_t row_idx = 0; row_idx < info.row_count; row_idx++) {
+		auto list_idx = info.list_column_format.sel->get_index(row_idx);
+		const auto &list_entry = info.list_entries[list_idx];
+
+		// set the result to NULL for this row
+		if (!info.list_column_format.validity.RowIsValid(list_idx)) {
+			result_validity.SetInvalid(row_idx);
+			row_done[row_idx] = true;
+			continue;
+		}
+
+		// empty list, nothing to execute
+		if (list_entry.length == 0) {
+			continue;
+		}
+
+		// iterate the elements of the current list and create the corresponding selection vectors
+		for (idx_t child_idx = 0; child_idx < list_entry.length; child_idx++) {
+			if (row_done[row_idx]) {
+				break;
+			}
+
+			// reached STANDARD_VECTOR_SIZE elements
+			if (elem_cnt == STANDARD_VECTOR_SIZE) {
+				FlushChunk(elem_cnt);
+				if (row_done[row_idx]) {
+					break;
+				}
+			}
+
+			// FIXME: reuse same selection vector for inconstant rows
+			// adjust indexes for slicing
+			child_info.sel.set_index(elem_cnt, list_entry.offset + child_idx);
+			for (auto &entry : mutable_column_infos) {
+				entry.get().sel.set_index(elem_cnt, row_idx);
+			}
+
+			// set the index vector
+			if (info.has_index) {
+				index_vector.SetValue(elem_cnt, Value::BIGINT(NumericCast<int64_t>(child_idx + 1)));
+			}
+
+			row_indexes[elem_cnt] = row_idx;
+			elem_cnt++;
+		}
+	}
+
+	FlushChunk(elem_cnt);
+
+	if (info.is_all_constant && !info.is_volatile) {
+		result.SetVectorType(VectorType::CONSTANT_VECTOR);
+	}
+}
+
 } // namespace duckdb
