@@ -6,6 +6,7 @@ add_library_unity(
   range.cpp
   list_value.cpp
   list_any.cpp
+  list_all.cpp
   list_filter.cpp
   list_has_any_or_all.cpp
   list_aggregates.cpp

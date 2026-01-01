@@ -74,6 +74,8 @@ public:
 	static void ListFilterFunction(DataChunk &args, ExpressionState &state, Vector &result);
 	//! Internally executes list_any
 	static void ListAnyFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	//! Internally executes list_all
+	static void ListAllFunction(DataChunk &args, ExpressionState &state, Vector &result);
 	//! Internally executes list_reduce
 	static void ListReduceFunction(DataChunk &args, ExpressionState &state, Vector &result);
 

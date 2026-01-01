@@ -228,6 +228,23 @@ struct ArrayAnyFun {
 	static constexpr const char *Name = "array_any";
 };
 
+struct ListAllFun {
+	static constexpr const char *Name = "list_all";
+	static constexpr const char *Parameters = "list,lambda(x)";
+	static constexpr const char *Description =
+	    "Returns `true` if the `lambda` function returns `true` for every element of the input `list`. DuckDB casts the `lambda` function's return type to `BOOL`.";
+	static constexpr const char *Example = "list_all([3, 4, 5], lambda x : x > 2)";
+	static constexpr const char *Categories = "list,lambda";
+
+	static ScalarFunction GetFunction();
+};
+
+struct ArrayAllFun {
+	using ALIAS = ListAllFun;
+
+	static constexpr const char *Name = "array_all";
+};
+
 struct ListFilterFun {
 	static constexpr const char *Name = "list_filter";
 	static constexpr const char *Parameters = "list,lambda(x)";
